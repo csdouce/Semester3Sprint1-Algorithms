@@ -7,7 +7,7 @@
 */
 
 // Connecting the database
-const { Client } = require('pg').Client;
+const { Client } = require('pg');
 const client = new Client({
     user: 'Semester3Sprint1',
     host: 'localhost',
@@ -15,21 +15,6 @@ const client = new Client({
     password: 's3s1Team_6',
     port: 5432,
 });
-
-client.connect();
-
-const query = `SELECT * FROM Messages`;
-
-client.query(query, (err, res) => {
-    if (err) {
-        console.error(err);
-        return;
-    }
-    for (let row of res.rows) {
-        console.log(row);
-    }
-    client.end();
-})
 
 // setting up stack
 const { Stack } = require('./stack.js');
@@ -39,27 +24,98 @@ const stack = new Stack();
 const { Queue } = require('./queue.js');
 const queue = new Queue();
 
-// stack.push({
-//     data: "This message will self destruct in 20 seconds",
-//     agentId: 12345,
-//     structureId: 67890
-// })
-
-// stack.push({
-//     data: 'This message will self destruct in 45 seconds',
-//     agentId: 0124,
-//     structureId: 44112255
-// })
-
-// console.log(stack);
-
-// Getting the oldest message - simple status updates that are not mission critical
-function oldestMessage() {
+// Function to add records to Message Database
+function addMessage(data, agentId, structureId) {
     
+    client.connect()
+
+    let SQL = `INSERT INTO Public."Messages" (data, agent_id, structure_id) VALUES ('${data}', ${agentId}, ${structureId})`;
+
+    client.query(SQL, (err, res) => {
+        if (err) {
+            console.log(err.message);
+        } else {
+            console.log("Your message has been stored.");
+        }
+
+        client.end();
+    })
 }
+
 
 // Getting the newest message - situations where the information is critical and
 // more-up-to-date information is more important
-function newestMessage() {
+function newestMessage(structureId) {
+
+    client.connect();
+
+    let SQL = `SELECT data FROM public."Messages" WHERE structure_id = ${structureId}`;
+
+    client.query(SQL, (err, res) => {
+        if (!err) {
+
+            if (res.rows.length === 0) {
+                console.log("Message Does Not Exist");
+                client.end();
+                return
+            }
+
+            for (let i = 0; i < res.rows.length; i++){
+                stack.push(res.rows[i])
+            }
+
+            let result = stack.pop();
+            console.log(result);
+            // return result;
+
+        } else {
+            console.log(err.message);
+        }
+
+        client.end();
+    })
+}
+
+// Getting the newest message - simple status updates that are not mission critical
+function oldestMessage(structureId) {
+
+    client.connect();
+
+    let SQL = `SELECT data FROM public."Messages" WHERE structure_id = ${structureId}`;
+
+    client.query(SQL, (err, res) => {
+        if (!err) {
+
+            if (res.rows.length === 0) {
+                console.log("Message Does Not Exist");
+                client.end();
+                return
+            }
+
+            for (let i = 0; i < res.rows.length; i++){
+                queue.enqueue(res.rows[i])
+            }
+
+            let result = queue.dequeue();
+            console.log(result);
+            // return result;
+
+        } else {
+            console.log(err.message);
+        }
+
+        client.end();
+    })
 
 }
+
+
+// Calling of functions that will add, or return appropiate messages
+
+let message = 'This is another important message from VS Code. It will self destruct in 30 seconds!!';
+let agentId = 7799;
+let structureId = 454545;
+
+// addMessage(message, agentId, structureId);
+// oldestMessage(56789);
+console.log(newestMessage(56789));
