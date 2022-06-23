@@ -43,38 +43,43 @@ function addMessage(data, agentId, structureId) {
     })
 }
 
-
-
 // Getting the newest message - situations where the information is critical and
 // more-up-to-date information is more important
-function newestMessage(structureId) {
+function newestMessage(agentId, structureId) {
 
-    let SQL = `SELECT data FROM public."Messages" WHERE structure_id = ${structureId}`;
+    let SQL = `SELECT * FROM public."Messages" WHERE structure_id = ${structureId}`;
 
     retrieveMessage(SQL)
     .then((message) => {
-        client.end();
         for (let i = 0; i < message.rows.length; i++){
             stack.push(message.rows[i]);
         }
 
-        console.log(stack.pop());
+        let retrievedMessage = stack.pop();
+
+        vewiedMessagesRecord(agentId, structureId, retrievedMessage.message_id);
+
+        console.log(retrievedMessage.data);
+
     })
 }
 
 // Getting the newest message - simple status updates that are not mission critical
-function oldestMessage(structureId) {
+function oldestMessage(agentId, structureId) {
 
-    let SQL = `SELECT data FROM public."Messages" WHERE structure_id = ${structureId}`;
+    let SQL = `SELECT data, message_id FROM public."Messages" WHERE structure_id = ${structureId}`;
 
     retrieveMessage(SQL)
     .then((message) => {
-        client.end();
         for (let i = 0; i < message.rows.length; i++){
             queue.enqueue(message.rows[i]);
         }
 
-        console.log(queue.dequeue());
+        let retrievedMessage = queue.dequeue();
+
+        vewiedMessagesRecord(agentId, structureId, retrievedMessage.message_id);
+        
+        console.log(retrievedMessage.data);
     })
 }
 
@@ -93,6 +98,22 @@ async function retrieveMessage(SQL) {
     return result;
 }
 
+function vewiedMessagesRecord(agentId, structureId, messageId) {
+
+    let date = `to_timestamp(${Date.now()}/1000)`
+    let SQL = `INSERT INTO Public."ViewedMessages" (message_id, agent_id, date_viewed, date_seconds, structure_id) VALUES (${messageId}, ${agentId}, ${date}, ${Date.now()}, ${structureId})`;
+
+    client.query(SQL, (err, res) => {
+        if (err) {
+            console.log(err.message);
+        } else {
+            console.log("Message viewing has been logged.");
+        }
+
+        client.end();
+    })
+}
+
 
 // Calling of functions that will add, or return appropiate messages
 
@@ -101,7 +122,7 @@ async function retrieveMessage(SQL) {
 // let structureId = 454545;
 
 // addMessage(message, agentId, structureId);
-oldestMessage(56789);
-// newestMessage(56789);
+// oldestMessage(1586, 56789);
+newestMessage(1357, 56789);
 
 
