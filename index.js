@@ -24,6 +24,7 @@ const stack = new Stack();
 const { Queue } = require('./queue.js');
 const queue = new Queue();
 
+
 // Function to add records to Message Database
 function addMessage(data, agentId, structureId) {
     
@@ -43,79 +44,64 @@ function addMessage(data, agentId, structureId) {
 }
 
 
+
 // Getting the newest message - situations where the information is critical and
 // more-up-to-date information is more important
 function newestMessage(structureId) {
 
-    client.connect();
-
     let SQL = `SELECT data FROM public."Messages" WHERE structure_id = ${structureId}`;
 
-    client.query(SQL, (err, res) => {
-        if (!err) {
-
-            if (res.rows.length === 0) {
-                console.log("Message Does Not Exist");
-                client.end();
-                return
-            }
-
-            for (let i = 0; i < res.rows.length; i++){
-                stack.push(res.rows[i])
-            }
-
-            let result = stack.pop();
-            console.log(result);
-            // return result;
-
-        } else {
-            console.log(err.message);
+    retrieveMessage(SQL)
+    .then((message) => {
+        client.end();
+        for (let i = 0; i < message.rows.length; i++){
+            stack.push(message.rows[i]);
         }
 
-        client.end();
+        console.log(stack.pop());
     })
 }
 
 // Getting the newest message - simple status updates that are not mission critical
 function oldestMessage(structureId) {
 
-    client.connect();
-
     let SQL = `SELECT data FROM public."Messages" WHERE structure_id = ${structureId}`;
 
-    client.query(SQL, (err, res) => {
-        if (!err) {
-
-            if (res.rows.length === 0) {
-                console.log("Message Does Not Exist");
-                client.end();
-                return
-            }
-
-            for (let i = 0; i < res.rows.length; i++){
-                queue.enqueue(res.rows[i])
-            }
-
-            let result = queue.dequeue();
-            console.log(result);
-            // return result;
-
-        } else {
-            console.log(err.message);
+    retrieveMessage(SQL)
+    .then((message) => {
+        client.end();
+        for (let i = 0; i < message.rows.length; i++){
+            queue.enqueue(message.rows[i]);
         }
 
-        client.end();
+        console.log(queue.dequeue());
     })
+}
 
+//Function to retrieve data from Select Queiries
+async function retrieveMessage(SQL) {
+
+    client.connect();
+    const result = await client.query(SQL);
+
+    if (!result || !result.rows || !result.rows.length) {
+        client.end();
+        console.log("No records matched your search!");
+        return [];
+    }
+
+    return result;
 }
 
 
 // Calling of functions that will add, or return appropiate messages
 
-let message = 'This is another important message from VS Code. It will self destruct in 30 seconds!!';
-let agentId = 7799;
-let structureId = 454545;
+// let message = 'This is another important message from VS Code. It will self destruct in 30 seconds!!';
+// let agentId = 7799;
+// let structureId = 454545;
 
 // addMessage(message, agentId, structureId);
-// oldestMessage(56789);
-console.log(newestMessage(56789));
+oldestMessage(56789);
+// newestMessage(56789);
+
+
