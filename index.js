@@ -16,15 +16,6 @@ const client = new Client({
     port: 5432,
 });
 
-// setting up stack
-const { Stack } = require('./stack.js');
-const stack = new Stack();
-
-// setting up queue
-const { Queue } = require('./queue.js');
-const queue = new Queue();
-
-
 // Function to add records to Message Database
 function addMessage(data, agentId, structureId) {
     
@@ -46,6 +37,10 @@ function addMessage(data, agentId, structureId) {
 // Getting the newest message - situations where the information is critical and
 // more-up-to-date information is more important
 function newestMessage(agentId, structureId) {
+    
+    // setting up stack
+    const { Stack } = require('./stack.js');
+    const stack = new Stack();
 
     let SQL = `SELECT * FROM public."Messages" WHERE structure_id = ${structureId}`;
 
@@ -66,6 +61,10 @@ function newestMessage(agentId, structureId) {
 
 // Getting the newest message - simple status updates that are not mission critical
 function oldestMessage(agentId, structureId) {
+
+    // setting up queue
+    const { Queue } = require('./queue.js');
+    const queue = new Queue();
 
     let SQL = `SELECT data, message_id FROM public."Messages" WHERE structure_id = ${structureId}`;
 
@@ -106,9 +105,10 @@ function vewiedMessagesRecord(agentId, structureId, messageId) {
     client.query(SQL, (err, res) => {
         if (err) {
             console.log(err.message);
-        } else {
-            console.log("Message viewing has been logged.");
         }
+        // else {
+        //     console.log("Message viewing has been logged.");
+        // }
 
         client.end();
     })
@@ -117,12 +117,14 @@ function vewiedMessagesRecord(agentId, structureId, messageId) {
 
 // Calling of functions that will add, or return appropiate messages
 
-// let message = 'This is another important message from VS Code. It will self destruct in 30 seconds!!';
-// let agentId = 7799;
-// let structureId = 454545;
+// let newMessage = 'I will be watching for you';
+// let agentId = 4589;
+// let structureId = 789789;
 
-// addMessage(message, agentId, structureId);
-// oldestMessage(1586, 56789);
-newestMessage(1357, 56789);
+// addMessage(newMessage, agentId, structureId);
+
+// oldestMessage(9854, 789789);
+
+// newestMessage(9854, 789789);
 
 
